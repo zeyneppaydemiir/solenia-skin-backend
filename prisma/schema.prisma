@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("employee")
+  refreshToken String?
+  createdAt DateTime @default(now())
+  sales     Sale[]
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model Product {
+  id            Int        @id @default(autoincrement())
+  name          String
+  sku           String     @unique
+  price         Float
+  cost          Float      @default(0)
+  stock         Int        @default(0)
+  lowStockAlert Int        @default(10)
+  shelfLifeMonths Int @default(24) // üretimden itibaren kaç ay sonra son kullanma tarihi dolar
+  createdAt     DateTime   @default(now())
+  categoryId    Int
+  category      Category   @relation(fields: [categoryId], references: [id])
+  saleItems     SaleItem[]
+  recipeItems      RecipeItem[]
+  productionOrders ProductionOrder[]
+  lots             ProductLot[]
+
+  @@index([categoryId])
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String?  @unique
+  phone     String?
+  createdAt DateTime @default(now())
+  sales     Sale[]
+}
+
+model Sale {
+  id          Int      @id @default(autoincrement())
+  totalAmount Float
+  status      String   @default("completed") // "completed" | "cancelled"
+  cancelledAt DateTime?
+  createdAt   DateTime @default(now())
+  refreshToken String? // hash'lenmiş halde saklanır
+  customerId  Int
+  userId      Int
+  customer    Customer   @relation(fields: [customerId], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
+  items       SaleItem[]
+
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+model SaleItem {
+  id        Int     @id @default(autoincrement())
+  quantity  Int
+  unitPrice Float
+  saleId    Int
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId])
+  @@index([productId])
+}
+// ------------------------------
+// Hammadde
+// ------------------------------
+model RawMaterial {
+  id          Int      @id @default(autoincrement())
+  name        String
+  code        String   @unique
+  unit        String // "g", "kg", "ml", "l", "adet"
+  stock       Float    @default(0)
+  minStock    Float    @default(0)
+  costPerUnit Float    @default(0)
+  createdAt   DateTime @default(now())
+
+  recipeItems RecipeItem[]
+}
+
+// ------------------------------
+// Reçete Kalemi (BOM) - "1 adet X ürün için Y gram Z hammaddesi gerekir"
+// ------------------------------
+model RecipeItem {
+  id              Int   @id @default(autoincrement())
+  quantityPerUnit Float // 1 adet ürün üretmek için gereken hammadde miktarı
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  rawMaterialId Int
+  rawMaterial   RawMaterial @relation(fields: [rawMaterialId], references: [id])
+
+  @@unique([productId, rawMaterialId]) // aynı hammadde aynı ürüne 2 kere eklenemesin
+}
+
+// ------------------------------
+// Üretim Emri
+// ------------------------------
+model ProductionOrder {
+  id          Int       @id @default(autoincrement())
+  quantity    Int // üretilecek/üretilen ürün adedi
+  status      String    @default("planned") // "planned" | "completed"
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  lot ProductLot? // tamamlanınca 1 lot oluşturulur
+}
+
+// ------------------------------
+// Ürün Lotu (Batch) - izlenebilirlik + SKT takibi
+// ------------------------------
+model ProductLot {
+  id             Int      @id @default(autoincrement())
+  lotNumber      String   @unique
+  quantity       Int
+  productionDate DateTime @default(now())
+  expiryDate     DateTime
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  productionOrderId Int?             @unique
+  productionOrder   ProductionOrder? @relation(fields: [productionOrderId], references: [id])
+}
