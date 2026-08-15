@@ -4,7 +4,12 @@ const cors = require("cors");
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://solenia-skin-frontend.vercel.app",
+  ],
+}));
 app.use(express.json());
 
 // Sağlık kontrolü - server ayakta mı, DB bağlantısı çalışıyor mu diye
