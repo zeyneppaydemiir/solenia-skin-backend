@@ -11,10 +11,10 @@ const { getProductionAnalysis } = require("../controllers/productionAnalytics.co
 router.use(requireAuth);
 
 router.get("/summary", getSummary);
-router.get("/customers", requireRole("sales_manager", "finance"), getCustomerSegments);
-router.get("/forecast", requireRole("sales_manager", "production_manager"), getForecast);
-router.get("/sales-analysis", requireRole("sales_manager", "finance"), getSalesAnalysis);
-router.get("/inventory-analysis", requireRole("warehouse_manager", "finance"), getInventoryAnalysis);
-router.get("/production-analysis", requireRole("production_manager", "finance", "quality_manager"), getProductionAnalysis);
+router.get("/customers", requireRole("sales_manager", "finance", "viewer"), getCustomerSegments);
+router.get("/forecast", requireRole("sales_manager", "production_manager", "viewer"), getForecast);
+router.get("/sales-analysis", requireRole("sales_manager", "finance", "viewer"), getSalesAnalysis);
+router.get("/inventory-analysis", requireRole("warehouse_manager", "finance", "viewer"), getInventoryAnalysis);
+router.get("/production-analysis", requireRole("production_manager", "finance", "quality_manager", "viewer"), getProductionAnalysis);
 
 module.exports = router;

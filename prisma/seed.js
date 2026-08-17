@@ -36,6 +36,7 @@ async function main() {
     { email: "satis@solenia.com", name: "Selin Satış", role: "sales_manager" },
     { email: "finans@solenia.com", name: "Kaan Finans", role: "finance" },
     { email: "kalite@solenia.com", name: "Ece Kalite", role: "quality_manager" },
+    { email: "demo@solenia.com", name: "Demo Kullanıcı", role: "viewer" },
   ];
   for (const ru of roleUsers) {
     await prisma.user.upsert({
